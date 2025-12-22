@@ -1,0 +1,116 @@
+/*Se crea el estilo del fondo*/
+/* todo lo que se muestra en pantalla(fondo) tendrá este estilo*/
+
+body {
+      margin: 0;
+      background-color: #7e8a50; /* color hex(hexagonal) */
+      display: flex;
+      justify-content: center; /* property aligns the flexible container's items when the items do not use all available space on the main-axis (horizontally). */
+      align-items: center; /* property specifies the default alignment for items inside a flexbox or grid container */
+      height: 100vh; /*Hace que el fondo verde ocupe el 100% de la pantalla*/
+      overflow: hidden; /*Si algo sobresale del fondo verde se oculta*/
+      position: relative; /*Sirve para anclar a el fondo el resto de elementos*/
+                          /* "overflow" property specifies what should happen if content overflows an element's box */
+	                      /* "position" property specifies the positioning type for an element */
+	                      /* "relative" is positioned relative to its normal position in the document flow */
+    }
+
+
+ 
+   /*Se crea el estilo de la caja ppal*/
+    .login-container {  /* "." es un selector de clase, todos las clases ("class=...") que sean de este tipo tendrán este estilo */
+      position: relative; /*Aqui se ancla la caja beige al fondo verde*/
+      z-index: 1; /*Sirve para ponerlo encima de los que tegan uno inferior*/
+	              /* "z-index" property specifies the stack order of an element */
+      background-color: #fff;
+      padding: 50px; /*espacio entre el contenido (como texto o una imagen) y el borde*/
+      border-radius: 15px;   /* radio del borde alrededor del elemento */
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2); /* color rgba: red,green, blue & alpha(opacidad)*/
+      text-align: center; /* centrado del texto */
+      width: 480px;
+      max-width: 90%;
+    }
+	
+	/*Donde aparece la imagen*/
+    .logo {
+    display: flex; /*Hace que se ponga el flujo*/
+    flex-direction: column;/*Cambia el sentido para que en vez de ser de izq a dcha sea de arriba a abajo*/
+    align-items: center; /*Se alinean los dos elementos para que estén centrados*/
+    margin-bottom: 20px;
+	}
+	/*Tamaño de la imagen*/
+	.logo img {
+    width: 120px;        
+    height: auto; /*Para que la altura se ajuste automaticamente a la anchura establecida arriba de 120px*/
+    margin-bottom: 10px;
+	}
+	/*Estilo del encabezado 1*/
+	h1 {
+	font-family: 'Impact', sans-serif; /*Fuente*/
+	font-size: 3em; /*Tamaño de la letra*/
+	                /* font-size: 3em;, font-size es la propiedad y 3em es el valor de esa propiedad */
+	color: #3f4b27; /*Color de la letra*/
+	margin: 0; /*Margen de los bordes*/
+	}
+	/*Estilo del encabezado 2*/
+    h2 {
+      font-size: 1em;
+      font-weight: 400;
+      color: #6b7544;
+      margin-bottom: 25px;
+    }
+	/*Estilo del texto que se muestra arriba de los campos a rellenar*/
+    label {
+      display: block; /*Para que se comporte como bloque, es decir ,ocupa todo el ancho y obliga ha haer un salto de linea */
+      text-align: left;
+      margin-bottom: 8px;
+      color: #4e5930;
+    }
+	/*Estilo de los campos a rellenar y las cajas donde se introducen los datos*/
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+      font-size: 1em;
+    }
+	
+    /*Estilo de los botones en general*/
+	button {
+	padding: 10px 30px; /* crea un espacio alrededor del elemento */
+	border: none;
+	border-radius: 8px;
+	cursor: pointer; /* "cursor" property specifies the mouse cursor to be displayed when pointing over an element */
+	font-weight: bold;
+	font-size: 1em; /* tamaño de la fuente */
+	color: white; 
+	}
+
+
+	.btn-aceptar {
+	background-color: #28a745; /*Estilo especifico para que el botono de aceptar tenga el fondo verde*/
+	}
+
+
+	.btn-cancelar {
+	background-color: #dc3545; /*Lo mismo pero con el de cancelar en rojo*/
+	}
+
+	/*Para crear un hueco entre los dos botones*/
+	.buttons {
+	display: flex; /*Para poner los elementos en fila*/
+	justify-content: space-around;  /*Para que haya un espacio entre los elementos*/
+	gap: 15px; /*Dicho espacio es de 15 pixeles*/
+	}
+
+	/*Mientras se pasa el cursor por el boton de aceptar cambia levemente su color y se hace algo más grande*/
+	.btn-aceptar:hover {
+	background-color: #218838;
+	transform: scale(1.1);
+	}
+	/*Lo mismo pero con el boton de cancelar*/
+	.btn-cancelar:hover {
+	background-color: #c82333;
+	transform: scale(1.1);
+	}

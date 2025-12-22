@@ -1,0 +1,242 @@
+body {
+    margin: 20px; /* Añadido margen para que el contenedor no pegue a los bordes */
+    background-color: #7e8a50; 
+    font-family: sans-serif; /* tipo de fuente */
+}
+
+/* --- Contenedor principal blanco --- */
+.main-container { 
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 90%;
+    max-width: 1200px; /* Aumentado el ancho máximo para que quepa todo */
+    margin: auto; /* Centra el contenedor horizontalmente */
+}
+
+/* --- Encabezado con logo y título --- */
+.header {
+    display: flex;
+    flex-direction: column; /* define la dirección del elemento flexible */
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header img {
+    width: 120px;          
+    height: auto;
+    margin-bottom: 10px; /* margen inferior */
+}
+
+/* estilo del encabezado 1, todos los encabezados h1 tendrán este estilo */
+h1 {
+    font-family: 'Impact', sans-serif;
+    font-size: 3em;
+    color: #3f4b27;
+    margin: 0;
+}
+
+/* Línea separadora */
+hr {
+    border: 1px solid #eee;
+    margin-bottom: 30px;
+}
+
+/* --- NUEVO LAYOUT PARA MÁQUINAS (GRID) --- */
+/*.machines-grid {
+    display: grid; /* Displays an element as a block-level grid container */
+    /* 5 columnas: 3 para máquinas y 2 para flechas */
+    /*grid-template-columns: 1fr auto 1fr auto 1fr; 
+    gap: 20px; /* Espacio entre las tarjetas y flechas */
+    /*align-items: center;
+}
+
+/* --- ¡CORRECCIÓN! Volvemos al LAYOUT ESTÁTICO (GRID) --- */
+.machines-grid {
+    display: grid; 
+    /* 5 columnas: 3 para máquinas y 2 para flechas */
+    grid-template-columns: 1fr auto 1fr auto 1fr; 
+    gap: 20px; /* Espacio entre las tarjetas y flechas */
+    align-items: center; /* Alinea verticalmente las tarjetas y flechas */
+}
+
+
+.machine-card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    position: relative; 
+    width: auto; /* La rejilla decide el ancho */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%; /* Ocupa toda la altura de la celda de la rejilla */
+}
+
+.machine-card a {
+    text-decoration: none;
+    color: inherit;
+    flex-grow: 1;
+}
+.machine-card h3 {
+    margin-top: 10px;
+    color: #3f4b27;
+}
+.machine-img {
+    width: 100px;
+    height: auto;
+    margin: 10px 0;
+}
+select {
+    border: 1px solid #ccc;
+    padding: 5px;
+    border-radius: 5px;
+}
+/* Menú de opciones en la esquina de cada tarjeta */
+.card-options {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+select {
+    border: 1px solid #ccc;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.arrow {
+    font-size: 40px;
+    color: #3f4b27;
+    text-align: center;
+    /* ¡CORRECCIÓN! Centramos la flecha en su celda */
+    margin: 0 auto;
+    padding: 0;
+}
+/* La flecha hacia abajo se alinea en la 5ª columna */
+.down-arrow {
+    grid-column-start: 5; 
+}
+
+/* --- Colores para las opciones del selector de estado --- */
+/*
+.option-verde { background-color: #a3e9a4; color: #003300; }
+.option-naranja { background-color: #ffd1a4; color: #663300; }
+.option-rojo { background-color: #ff9999; color: #4d0000; }*/
+
+
+/* --- ESTILOS PARA LOS BOTONES (Adaptados de tu CSS) --- */
+.buttons {
+    display: flex; /* Displays an element as a block-level flex container */
+	               /* A block-level element ALWAYS starts on a new line and takes up the full width available (stretches out to the left and right as far as it can) */
+    justify-content: space-between; /* Pone un botón a cada extremo */
+    margin-top: 30px;
+}
+
+button {
+    padding: 10px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1em;
+    color: white; 
+    transition: all 0.2s; /* Añadida transición para el hover */
+}
+
+.btn-aceptar {
+    background-color:#3f4b27; /*Estilo especifico para que el botono de aceptar tenga el fondo verde*/
+}
+.btn-aceptar:hover { /* ":hover" pseudo-class is used to select elements when you mouse over them */
+    background-color: #218838; /*Mientras se pasa el cursor por el boton de aceptar cambia levemente su color y se hace algo más grande*/
+    transform: scale(1.05); /* "transform" property applies a 2D or 3D transformation to an element */
+	                        /* "scale" aumentar al pasar el raton(hover) */
+}
+
+
+.btn-cancelar {
+    background-color: #dc3545; /*Lo mismo pero con el de cancelar en rojo*/
+}
+.btn-cancelar:hover {
+    background-color: #c82333;
+    transform: scale(1.05);
+}
+
+.btn-action {
+	background-color: #dc3545;
+}
+
+.btn-action:hover {
+	background-color: #dc3545;
+	transform: scale(1.05);
+}
+
+/* --- ¡BLOQUE MODIFICADO! --- */
+/* --- Estilos para el formulario de acción en la tarjeta --- */
+
+/* Contenedor para los dos formularios */
+.machine-actions-container {
+    display: flex;
+    justify-content: space-between; /* Pone los 2 formularios en extremos opuestos */
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+/* --- Formulario de Edición (Select + Botón "Ir") --- */
+.form-edit {
+    display: flex;
+    gap: 5px; /* Espacio entre el select y el botón "Ir" */
+    width: 60%; /* Ocupa la mayoría del espacio */
+}
+.form-edit select {
+    width: 70%;
+    font-size: 0.9em;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Botón "Ir" (Verde oliva) */
+/* ¡CORRECCIÓN DE SINTAXIS! Se quitó el ':' extra de .btn-action: */
+.form-edit .btn-action {
+    width: 30%;
+    background-color: #3f4b27; 
+    color: white;
+    font-size: 0.9em;
+    padding: 8px 5px; /* Ajustado */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.form-edit .btn-action:hover {
+    background-color: #3f4b27;
+}
+
+/* --- Formulario de Borrar (Botón Rojo) --- */
+.form-delete {
+    width: 35%; /* Ocupa el espacio restante */
+}
+.btn-action-delete {
+    width: 100%; /* El botón ocupa todo el espacio de su formulario */
+    background-color: #dc3545; /* Rojo (como .btn-cancelar) */
+    color: white;
+    font-size: 0.9em;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+.btn-action-delete:hover {
+    background-color: #c82333;
+    transform: scale(1.03);
+}
