@@ -24,8 +24,8 @@ if (!is_object($usuario) || !method_exists($usuario, 'esJefe')) {
 $esJefe = $usuario->esJefe();
 
 // 3. OBTENCIÓN DEL ID DE LA MÁQUINA
-// --> $_GET['id_maquina'] viene de la URL (ej: maquinas_plantilla.php?id_maquina=maquina_1)
-// --> Si no viene nada, usamos 'maquina_1' por defecto para que no falle.
+// --> $_GET['id'] viene de la URL (ej: maquinas_plantilla.php?id=maquina_1)
+// --> Si no viene nada, marcamos error.
 
 $id_maquina = isset($_GET['id']) ? $_GET['id'] : null;
 
@@ -42,20 +42,40 @@ if (!$maquina) die("Error: Máquina no encontrada.");
 
 // --- LÓGICA DE FLUJO ---
 
-// 1. PASO A: Generar aleatorios nuevos para TODO
-// (Esto ocurre siempre, asegurando que al refrescar todo cambia)
-$maquina->simularValores();
-
-// 2. PASO B: Si hemos pulsado "Guardar", aplicamos los manuales ENCIMA de los aleatorios
+// 1. GESTIÓN DE GUARDADO (POST)
+// (Movemos esto arriba para procesar y redirigir antes de pintar nada)
 if ($esJefe && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_manual'])) {
     $params_manuales = $_POST['p'] ?? [];
     $stock_manual = $_POST['s'] ?? [];
     
+    // Primero simulamos todo el entorno (para el fondo)
+    $maquina->simularValores(); 
+
+    // Luego aplicamos tus cambios manuales encima (guardándolos en BD)
     // Esta función solo actualiza la BD si el input NO está vacío
     $maquina->actualizarValoresManuales($params_manuales, $stock_manual);
+    
+    // TRUCO FLASH: Marcamos en sesión que "acabamos de guardar"
+    $_SESSION['flash_guardado'] = true;
+
+    // REDIRECCIÓN: Esto elimina el mensaje de "Volver a enviar formulario"
+    header("Location: maquinas_plantilla.php?id=" . $id_maquina);
+    exit();
+}
+
+// 2. LÓGICA DE SIMULACIÓN (GET)
+// (Esto ocurre siempre, asegurando que al refrescar todo cambia)
+// EXCEPCIÓN: Si venimos de guardar (flash_guardado), NO simulamos para ver los cambios.
+if (isset($_SESSION['flash_guardado'])) {
+    unset($_SESSION['flash_guardado']);
+    // No simulamos, mostramos lo guardado
+} else {
+    // Si es un refresco normal, generamos nuevos aleatorios
+    $maquina->simularValores();
 }
 
 // 3. PASO C: Recargar los datos finales para mostrar
+// Volvemos a pedir a la BD los datos actualizados (sean simulados o manuales)
 $maquina = Maquina::obtenerPorId($id_maquina);
 ?>
 <!DOCTYPE html>
@@ -236,7 +256,7 @@ $maquina = Maquina::obtenerPorId($id_maquina);
                                         <td>
                                             <?php if($esJefe): ?>
                                                 <input type="text" 
-                                                       name="p[<?php echo $p->id; ?>]" 
+                                                       name="p[<?php echo $p->id_parametro; ?>]" 
                                                        value="" 
                                                        placeholder="<?php echo ($p->valor_actual !== null) ? $p->valor_actual : '-'; ?>" 
                                                        class="input-tabla">
@@ -270,7 +290,7 @@ $maquina = Maquina::obtenerPorId($id_maquina);
                                         <td>
                                             <?php if($esJefe): ?>
                                                 <input type="text" 
-                                                       name="s[<?php echo $s->id; ?>]" 
+                                                       name="s[<?php echo $s->id_stock; ?>]" 
                                                        value="" 
                                                        placeholder="<?php echo ($s->valor_actual !== null) ? $s->valor_actual : '-'; ?>" 
                                                        class="input-tabla">
