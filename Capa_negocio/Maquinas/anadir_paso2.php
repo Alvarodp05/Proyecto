@@ -1,149 +1,181 @@
 <?php
+// Proyecto/Capa_negocio/Maquinas/anadir_paso2.php
+require_once("../Usuario/clase_usuario.php");
 session_start();
-include_once ("../../Lib/BD/AccesoBD.php");
 
-// Si se llega aquí desde el Paso 1, configuramos la sesión
-if (isset($_POST['posicion'])) {
-    $_SESSION['anadir_posicion'] = $_POST['posicion'];
-    
-    $bd = new AccesoBD();
-	
-	// Determinamos qué máquina vamos a cargar de la BD como plantilla
-    if ($_POST['posicion'] == 'inicio') {
-        $machine_id_target = 'maquina_0';
-        $link_path = '../Maquinas/maquina_jefe_0.php'; 
-    } else {
-        $machine_id_target = 'maquina_7';
-        $link_path = '../Maquinas/maquina_jefe_7.php';
-    }
-    
-    // --- ¡CORRECCIÓN! CARGA DESDE LA BD ---
-    // Obtenemos los datos actuales del slot vacío desde MySQL
-    $_SESSION['anadir_data'] = $bd->obtenerDatosMaquina($machine_id_target);
-    
-    // Ya no necesitamos guardar rutas de archivos físicos
-    
-	// Asignamos el link de JEFE correcto y valores por defecto
-    $_SESSION['anadir_data']['link'] = $link_path;
-    $_SESSION['anadir_data']['machine_id'] = $machine_id_target;
-    $_SESSION['anadir_data']['machine_name'] = 'Nombre de la Nueva Máquina';
-	
+// 1. INICIALIZAR SI VENIMOS DEL PASO 1
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_maquina'])) {
+    $_SESSION['add_data'] = [
+        'machine_id' => $_POST['id_maquina'],
+        'machine_name' => $_POST['nombre'], // Nombre inicial
+        'description' => '',
+        'imagen' => '../../Lib/Imagenes/logo_esquina.jpg',
+        'orden' => ($_POST['id_maquina'] == 'maquina_0' ? 1 : 8),
+        'parameters' => [],
+        'stock' => []
+    ];
 }
 
-// Seguridad
-if (!isset($_SESSION['anadir_data'])) {
+// 2. SEGURIDAD
+if (!isset($_SESSION['add_data'])) {
     header("Location: anadir_paso1.php");
-    exit;
+    exit();
 }
 
-$data = $_SESSION['anadir_data'];
-
-$error_doble_accion = null;
-if (isset($_SESSION['flash_error'])) {
-    $error_doble_accion = $_SESSION['flash_error'];
-    unset($_SESSION['flash_error']);
-}
+$data = $_SESSION['add_data'];
+$error = isset($_SESSION['flash_error']) ? $_SESSION['flash_error'] : null;
+unset($_SESSION['flash_error']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Añadir Máquina - Paso 2</title>
+    <title>Configurar Nueva Máquina</title>
     <link rel="stylesheet" href="../../Lib/Estilos/Estilo_maquinas_jefe.css">
+    <style>
+        /* CSS CORREGIDO */
+        * { box-sizing: border-box; }
+        
+        body { 
+            background-color: #7e8a50; 
+            padding: 40px 20px; 
+            font-family: Arial, sans-serif;
+        }
+        .main-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-item-edit textarea, 
+        .form-item-edit input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .action-box { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid #dee2e6;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .simple-list { list-style: none; padding: 0; margin: 0; }
+        .simple-list li { 
+            background: #fff; 
+            border: 1px solid #e9ecef; 
+            padding: 12px; 
+            margin-bottom: 5px; 
+            border-radius: 6px;
+            display: flex; 
+            justify-content: space-between;
+        }
+        
+        .img-preview { width: 80px; border: 1px solid #ccc; margin-left: 10px; border-radius: 5px; }
+    </style>
 </head>
 <body>
-    <div class="main-container" style="display:block; max-width: 800px;">
+    <div class="main-container"> 
         
         <form action="anadir_procesar.php" method="POST">
-            <div class="content-header">
-                <h1>Añadiendo: <?php echo htmlspecialchars($data['machine_name']); ?></h1>
-            </div>
             
-            <?php if ($error_doble_accion): ?>
-                <div classs="global-alarm-correctiva" style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <?php echo htmlspecialchars($error_doble_accion); ?>
+            <div class="content-header" style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+                <h1>Creando: <?php echo htmlspecialchars($data['machine_name']); ?></h1>
+            </div>
+			
+            <?php if ($error): ?>
+                <div style="background:#f8d7da; color:#721c24; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #f5c6cb;">
+                    <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
 
             <div class="section">
-                <h2>Datos Generales</h2>
+                <h2>1. Datos Generales</h2>
                 
                 <div class="form-item-edit">
-                    <label for="machine_id">ID de la Máquina (¡No cambiar!):</label>
-                    <input type="text" id="machine_id" name="machine_id" value="<?php echo htmlspecialchars($data['machine_id']); ?>" readonly style="background:#eee;">
+                    <label>Nombre de la Máquina:</label>
+                    <input type="text" name="nombre" value="<?php echo htmlspecialchars($data['machine_name']); ?>" required>
+                </div>
+
+                <div class="form-item-edit" style="margin-top:10px;">
+                    <label>Descripción:</label>
+                    <textarea name="description" rows="3"><?php echo htmlspecialchars($data['description']); ?></textarea>
                 </div>
                 
-                <div class="form-item-edit">
-                    <label for="machine_name">Nombre de la Máquina:</label>
-                    <input type="text" id="machine_name" name="machine_name" value="<?php echo htmlspecialchars($data['machine_name']); ?>">
-                </div>
-                
-                <div class="form-item-edit">
-                    <input type="hidden" id="link" name="link" value="<?php echo htmlspecialchars($data['link']); ?>">
-                </div>
-                
-                <div class="form-item-edit">
-                    <label for="imagen">Archivo de Imagen (Ruta):</label>
-                    <input type="text" id="imagen" name="imagen" value="<?php echo htmlspecialchars($data['imagen']); ?>">
-                </div>
-                
-                <div class="form-item-edit">
-                    <label for="description">Descripción:</label>
-                    <textarea id="description" name="description"><?php echo htmlspecialchars($data['description']); ?></textarea>
+                <div class="form-item-edit" style="margin-top:10px;">
+                    <label>Imagen (URL):</label>
+                    <div style="display:flex; align-items:center;">
+                        <input type="text" name="imagen" value="<?php echo htmlspecialchars($data['imagen']); ?>">
+                        <img src="<?php echo htmlspecialchars($data['imagen']); ?>" alt="Img" class="img-preview">
+                    </div>
                 </div>
             </div>
 
             <div class="section">
-                <h2>Parámetros</h2>
-                <div class="form-item-edit">
-                    <label for="param_action">Acción de Parámetro:</label>
-                    <select name="param_action" id="param_action">
-                        <option value="" selected>Ninguna</option>
-                        <option value="add">Añadir Nuevo Parámetro</option>
-						<option value="edit">Editar Parámetro Existente</option>
-                        <option value="delete">Borrar Parámetro Existente</option>
+                <h2>2. Parámetros</h2>
+                <div class="action-box">
+                    <span>Opciones:</span>
+                    <select name="param_action" style="padding:8px; border-radius:4px;">
+                        <option value="" selected>-- Seleccionar --</option>
+                        <option value="add">Añadir Nuevo</option>
+						<option value="edit">Editar Seleccionado</option>
+                        <option value="delete">Borrar Seleccionado</option>
                     </select>
                 </div>
-                <h4>Parámetros Actuales:</h4>
-                <ul class="param-list">
-                    <?php if (empty($data['parameters'])): ?>
-                        <li>No hay parámetros definidos.</li>
-                    <?php else: ?>
-                        <?php foreach($data['parameters'] as $key => $p): ?>
-                            <li><strong><?php echo htmlspecialchars($p['label']); ?></strong> (<?php echo $key; ?>)</li>
+                
+                <?php if (empty($data['parameters'])): ?>
+                    <div style="text-align:center; padding:10px; color:#999; border:1px dashed #ccc; border-radius:5px;">Sin parámetros</div>
+                <?php else: ?>
+                    <ul class="simple-list">
+                        <?php foreach($data['parameters'] as $p): ?>
+                            <li>
+                                <strong><?php echo htmlspecialchars($p['label']); ?></strong>
+                                <span style="color:#666; font-size:0.9em;"><?php echo htmlspecialchars($p['units'] ?? ''); ?></span>
+                            </li>
                         <?php endforeach; ?>
-                    <?php endif; ?>
-                </ul>
+                    </ul>
+                <?php endif; ?>
             </div>
             
             <div class="section">
-                <h2>Stock de Seguridad</h2>
-                <div class="form-item-edit">
-                    <label for="stock_action">Acción de Stock:</label>
-                    <select name="stock_action" id="stock_action">
-                        <option value="" selected>Ninguna</option>
-                        <option value="add_stock">Añadir Nuevo Stock</option>
-                        <option value="edit_stock">Editar Stock Existente</option>
-                        <option value="delete_stock">Borrar Stock Existente</option>
+                <h2>3. Stock</h2>
+                <div class="action-box">
+                    <span>Opciones:</span>
+                    <select name="stock_action" style="padding:8px; border-radius:4px;">
+                        <option value="" selected>-- Seleccionar --</option>
+                        <option value="add_stock">Añadir Nuevo</option>
+                        <option value="edit_stock">Editar Seleccionado</option>
+                        <option value="delete_stock">Borrar Seleccionado</option>
                     </select>
                 </div>
-                <h4>Stock Actual:</h4>
-                <ul class="param-list">
-                    <?php if (empty($data['stock'])): ?>
-                        <li>No hay stock definido.</li>
-                    <?php else: ?>
-                        <?php foreach($data['stock'] as $key => $p): ?>
-                            <li><strong><?php echo htmlspecialchars($p['label']); ?></strong> (<?php echo $key; ?>)</li>
+
+                <?php if (empty($data['stock'])): ?>
+                    <div style="text-align:center; padding:10px; color:#999; border:1px dashed #ccc; border-radius:5px;">Sin stock</div>
+                <?php else: ?>
+                    <ul class="simple-list">
+                        <?php foreach($data['stock'] as $s): ?>
+                            <li><strong><?php echo htmlspecialchars($s['label']); ?></strong></li>
                         <?php endforeach; ?>
-                    <?php endif; ?>
-                </ul>
+                    </ul>
+                <?php endif; ?>
             </div>
-            
-            <div class="buttons-edit-wizard">
-                <button type="submit" name="accion_guardar" value="guardar" class="btn-aceptar">AÑADIR MÁQUINA</button>
-                <button type="submit" name="accion_borrar" value="borrar" class="btn-cancelar">Borrar Formulario</button>
-                <button type="submit" name="accion_siguiente" value="siguiente" class="btn-siguiente">Siguiente</button>
-                <a href="../../Capa_usuario/Planta_produccion/plantaproduccion_jefe.php" class="btn-cancelar-link">Cancelar</a>
+
+            <div class="buttons-edit-wizard" style="margin-top:30px; border-top:1px solid #eee; padding-top:20px;">
+                <a href="anadir_paso1.php" class="btn-cancelar-link">Cancelar</a>
+                
+                <button type="submit" name="accion_siguiente" value="siguiente" class="btn-siguiente" style="margin-left:auto; margin-right:10px;">Ir a Acción</button>
+                
+                <button type="submit" name="accion_guardar" value="guardar" class="btn-aceptar">Guardar Máquina</button>
             </div>
 
         </form>

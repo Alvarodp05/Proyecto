@@ -1,128 +1,107 @@
 <?php
+// Proyecto/Capa_negocio/Maquinas/anadir_paso3_add.php
+require_once("../Usuario/clase_usuario.php");
 session_start();
 
-// 1. Seguridad: Si no hay datos en la sesión 'anadir_data', redirigir.
-if (!isset($_SESSION['anadir_data'])) {
-    header("Location: ../../Capa_usuario/Planta_produccion/plantaproduccion_jefe.php");
-    exit;
-}
-
-// 2. Determinamos qué estamos editando (Parámetro o Stock)
-$tipo = $_GET['tipo'] ?? 'param';
-$es_param = ($tipo == 'param');
-$titulo = $es_param ? "Parámetro" : "Ítem de Stock";
-$seccion_sesion = $es_param ? 'parameters' : 'stock';
-
-// 3. Comprobar si el formulario se ha enviado (a sí mismo)
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    // 4. Recoger todos los datos del formulario
-    $param_key = $_POST['param_key'];
-    $param_label = $_POST['param_label'];
-    
-    // --- ¡LÓGICA DE UNIDADES MODIFICADA! ---
-    $param_units = 'Uds'; // Valor por defecto para Stock
-    if ($es_param) {
-        // Solo recogemos las unidades del POST si es un Parámetro
-        $param_units = $_POST['param_units'];
-    }
-    // --- FIN LÓGICA ---
-    
-    $param_c_low = $_POST['param_c_low'];
-    $param_c_high = $_POST['param_c_high'];
-    $param_p_low = $_POST['param_p_low'];
-    $param_p_high = $_POST['param_p_high'];
-    $rand_min = $_POST['rand_min'];
-    $rand_max = $_POST['rand_max'];
-
-    // 5. Construir el nuevo array
-    $nuevo_item = [
-        'label' => $param_label,
-        'units' => $param_units, // <-- Valor (Uds o $_POST)
-        'alarm_c_low' => $param_c_low,
-        'alarm_c_high' => $param_c_high,
-        'alarm_p_low' => $param_p_low,
-        'alarm_p_high' => $param_p_high,
-        'rand_min' => $rand_min,
-        'rand_max' => $rand_max,
-    ];
-
-    // 6. Añadir el nuevo item a la sesión 'anadir_data'
-    $_SESSION['anadir_data'][$seccion_sesion][$param_key] = $nuevo_item;
-
-    // 7. Redirigir de vuelta al Paso 2 (la página principal de añadir)
-    header("Location: anadir_paso2.php");
-    exit;
-}
+$tipo = $_GET['tipo'] ?? 'param'; 
+$titulo = ($tipo == 'param') ? 'Añadir Parámetro' : 'Añadir Stock';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Añadir <?php echo $titulo; ?></title>
+    <title><?php echo $titulo; ?></title>
     <link rel="stylesheet" href="../../Lib/Estilos/Estilo_maquinas_jefe.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #7e8a50; padding: 40px 20px; min-height: 100vh; }
+        .main-container {
+            background-color: #ffffff; padding: 40px; border-radius: 20px;
+            max-width: 700px; margin: 0 auto;
+        }
+        .fila-doble { display: flex; gap: 20px; margin-bottom: 15px; }
+        .columna-mitad { flex: 1; }
+        .form-item-edit input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; color: #3f4b27; font-size: 1.1em; }
+    </style>
 </head>
 <body>
-    <div class="main-container" style="display:block; max-width: 800px;">
+    <div class="main-container">
         
-        <form action="anadir_paso3_add.php?tipo=<?php echo $tipo; ?>" method="POST"> 
-            <div class="content-header">
-                <h1>Añadir Nuevo <?php echo $titulo; ?></h1>
-            </div>
-
+        <div class="content-header">
+            <h1><?php echo $titulo; ?></h1>
+        </div>
+        
+        <form action="anadir_procesar.php" method="POST">
+            <input type="hidden" name="form_type" value="add_item">
+            <input type="hidden" name="tipo_item" value="<?php echo $tipo; ?>">
+            
             <div class="section">
-                <div class="form-item-edit">
-                    <label for="param_key">ID (ej: 'caudal_2'):</label>
-                    <input type="text" id="param_key" name="param_key" placeholder="Debe ser único, sin espacios" required>
-                </div>
                 
                 <div class="form-item-edit">
-                    <label for="param_label">Nombre (ej: 'Caudal Secundario'):</label>
-                    <input type="text" id="param_label" name="param_label" placeholder="Nombre que ve el usuario" required>
+                    <label>Identificador (ID único):</label>
+                    <input type="text" name="manual_id" required placeholder="Ej: <?php echo ($tipo=='param')?'temp_aceite':'s_aceitunas'; ?>">
+                    <small style="color:#666;">Debe ser único.</small>
+                </div>
+
+                <div class="form-item-edit" style="margin-top:15px;">
+                    <label>Nombre (Etiqueta Visible):</label>
+                    <input type="text" name="label" required placeholder="Ej: <?php echo ($tipo=='param')?'Presión':'Aceitunas'; ?>">
                 </div>
                 
-                <?php if ($es_param): ?>
-                    <div class="form-item-edit">
-                        <label for="param_units">Unidades (ej: '[L/h]'):</label>
-                        <input type="text" id="param_units" name="param_units" placeholder="[L/h]">
-                    </div>
+                <?php if ($tipo == 'param'): ?>
+                <div class="form-item-edit" style="margin-top:15px;">
+                    <label>Unidades:</label>
+                    <input type="text" name="units" placeholder="Ej: kg, L, ºC">
+                </div>
                 <?php endif; ?>
+
                 <hr style="margin: 20px 0;">
-                <p><strong>Límites de Alarma:</strong></p>
+                <h3>Configuración de Alarmas Críticas (Rojo)</h3>
 
-                <div class="form-item-edit">
-                    <label>Alarma Correctiva (Roja) - Inferior:</label>
-                    <input type="number" name="param_c_low" value="0">
+                <div class="fila-doble">
+                    <div class="columna-mitad">
+                        <label>Mínimo:</label>
+                        <input type="number" step="0.01" name="alarm_c_low" value="0">
+                    </div>
+                    <div class="columna-mitad">
+                        <label>Máximo:</label>
+                        <input type="number" step="0.01" name="alarm_c_high" value="100">
+                    </div>
                 </div>
-                <div class="form-item-edit">
-                    <label>Alarma Correctiva (Roja) - Superior:</label>
-                    <input type="number" name="param_c_high" value="100">
-                </div>
-                <div class="form-item-edit">
-                    <label>Alarma Preventiva (Naranja) - Inferior:</label>
-                    <input type="number" name="param_p_low" value="10">
-                </div>
-                <div class="form-item-edit">
-                    <label>Alarma Preventiva (Naranja) - Superior:</label>
-                    <input type="number" name="param_p_high" value="90">
-                </div>
-				
-				<hr style="margin: 20px 0;">
-                <p><strong>Rango de Valor Aleatorio (para la simulación):</strong></p>
 
-                <div class="form-item-edit">
-                    <label>Valor Mínimo Aleatorio:</label>
-                    <input type="number" name="rand_min" value="0">
+                <h3>Configuración de Alarmas Preventivas (Naranja)</h3>
+                <div class="fila-doble">
+                    <div class="columna-mitad">
+                        <label>Mínimo:</label>
+                        <input type="number" step="0.01" name="alarm_p_low" value="10">
+                    </div>
+                    <div class="columna-mitad">
+                        <label>Máximo:</label>
+                        <input type="number" step="0.01" name="alarm_p_high" value="90">
+                    </div>
                 </div>
-                <div class="form-item-edit">
-                    <label>Valor Máximo Aleatorio:</label>
-                    <input type="number" name="rand_max" value="1000">
+
+                <hr style="margin: 20px 0;">
+                <h3>Simulación (Valores Aleatorios)</h3>
+                <div class="fila-doble">
+                    <div class="columna-mitad">
+                        <label>Generar Mínimo:</label>
+                        <input type="number" step="0.01" name="rand_min" value="0">
+                    </div>
+                    <div class="columna-mitad">
+                        <label>Generar Máximo:</label>
+                        <input type="number" step="0.01" name="rand_max" value="100">
+                    </div>
                 </div>
-            </div> <div class="buttons-edit-wizard">
-                <button type="submit" class="btn-aceptar">Añadir <?php echo $titulo; ?></button>
-                <a href="anadir_paso2.php" class="btn-cancelar-link">Volver (Cancelar)</a>
+
             </div>
-
+            
+            <div class="buttons-edit-wizard" style="margin-top:30px;">
+                <button type="submit" class="btn-aceptar">Añadir Componente</button>
+                <a href="anadir_paso2.php" class="btn-cancelar" style="text-decoration:none; margin-left:10px;">Cancelar</a>
+            </div>
         </form>
     </div>
 </body>

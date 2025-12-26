@@ -1,183 +1,203 @@
 <?php
+// Proyecto/Capa_negocio/Maquinas/editar_paso2_edit.php
+require_once("../Usuario/clase_usuario.php");
 session_start();
 
-// --- ¡NUEVO! Determinamos qué estamos editando ---
-$tipo = $_GET['tipo'] ?? 'param';
-$es_param = ($tipo == 'param');
-$seccion_sesion = $es_param ? 'parameters' : 'stock';
-$titulo = $es_param ? "Parámetro" : "Ítem de Stock";
-
-// 1. Seguridad: Si no hay datos de edición, redirigir.
+// 1. Verificar sesión
 if (!isset($_SESSION['edit_data'])) {
-    header("Location: ../../Capa_usuario/Planta_produccion/plantaproduccion_jefe.php");
-    exit;
-}
-
-// 2. LÓGICA DE GUARDADO (Si se envía el formulario)
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    // Recogemos todos los datos
-    $original_key = $_POST['original_param_key'];
-    $new_key = $_POST['param_key'];
-    
-    // --- ¡LÓGICA DE UNIDADES MODIFICADA! ---
-    $param_units = 'Uds'; // Valor por defecto para Stock
-    if ($es_param) {
-        $param_units = $_POST['param_units'];
-    }
-    // --- FIN LÓGICA ---
-    
-    $edited_parameter = [
-        'label' => $_POST['param_label'],
-        'units' => $param_units, // <-- Valor (Uds o $_POST)
-        'alarm_c_low' => $_POST['param_c_low'],
-        'alarm_c_high' => $_POST['param_c_high'],
-        'alarm_p_low' => $_POST['param_p_low'],
-        'alarm_p_high' => $_POST['param_p_high'],
-        'rand_min' => $_POST['rand_min'],
-        'rand_max' => $_POST['rand_max'],
-    ];
-
-    unset($_SESSION['edit_data'][$seccion_sesion][$original_key]);
-    $_SESSION['edit_data'][$seccion_sesion][$new_key] = $edited_parameter;
-    
     header("Location: editar_paso1.php");
     exit;
 }
 
+$tipo = $_GET['tipo'] ?? 'param'; // 'param' o 'stock'
+$data = $_SESSION['edit_data'];
+$lista = ($tipo == 'param') ? $data['parameters'] : $data['stock'];
 
-// 3. LÓGICA DE VISTA (Si se carga la página)
-$key_para_editar = $_GET['key'] ?? null;
-$lista_actual = $_SESSION['edit_data'][$seccion_sesion] ?? [];
+// Si no hay datos, volver
+if (empty($lista)) {
+    $_SESSION['flash_error'] = "No hay elementos para editar.";
+    header("Location: editar_paso1.php");
+    exit;
+}
 
+// 2. LÓGICA DE PANTALLA INTERMEDIA
+$id_seleccionado = isset($_POST['selector_id']) ? $_POST['selector_id'] : null;
+$mostrar_formulario = false;
+$item = null;
 
-if ($key_para_editar && isset($lista_actual[$key_para_editar])) {
-    $param_data = $lista_actual[$key_para_editar];
-} else {
-    // (lista_parametros se usará en la vista de lista)
+if ($id_seleccionado && isset($lista[$id_seleccionado])) {
+    $mostrar_formulario = true;
+    $item = $lista[$id_seleccionado];
+    
+    // Variables para los values
+    $val_label = $item['label'] ?? '';
+    $val_units = $item['units'] ?? '';
+    $val_c_low = $item['alarm_c_low'] ?? '';
+    $val_c_high = $item['alarm_c_high'] ?? '';
+    $val_p_low = $item['alarm_p_low'] ?? '';
+    $val_p_high = $item['alarm_p_high'] ?? '';
+    $val_r_min = $item['rand_min'] ?? '';
+    $val_r_max = $item['rand_max'] ?? '';
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Editar <?php echo $titulo; ?></title>
+    <title>Editar Componente</title>
     <link rel="stylesheet" href="../../Lib/Estilos/Estilo_maquinas_jefe.css">
     <style>
-        /* Estilo para la lista de selección */
-        .select-list { background: #fff; padding: 20px; border-radius: 8px; }
-        .select-item { 
-            display: block; 
-            margin-bottom: 10px; 
-            font-size: 1.1em;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #eee;
-            border-radius: 5px;
-            text-decoration: none;
-            color: #3f4b27;
-            font-weight: bold;
+        /* Estilos copiados y adaptados de editar_paso2_del.php para la lista */
+        .selection-list { 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: 8px; 
         }
-        .select-item:hover {
-            background-color: #e9e9e9;
+        .selection-item-btn { 
+            display: block; 
+            width: 100%;
+            text-align: left;
+            margin-bottom: 10px; 
+            font-size: 1.1em; 
+            background: none;
+            border: none;
+            border-bottom: 1px solid #eee; 
+            padding: 10px 5px;
+            cursor: pointer;
+            color: #333;
+        }
+        .selection-item-btn:hover {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            color: #3f4b27;
+        }
+        .selection-item-btn span {
+            float: right; 
+            color: #777; 
+            font-size: 0.9em; 
+            font-weight: normal;
         }
     </style>
 </head>
 <body>
     <div class="main-container" style="display:block; max-width: 800px;">
-        
-        <?php if (isset($param_data)): ?>
-            <form action="editar_paso2_edit.php?tipo=<?php echo $tipo; ?>" method="POST">
+
+        <?php if (!$mostrar_formulario): ?>
+            
+            <form action="" method="POST">
                 <div class="content-header">
-                    <h1>Editando <?php echo $titulo; ?>: <?php echo htmlspecialchars($param_data['label']); ?></h1>
+                    <h1>Editar <?php echo ($tipo == 'param') ? 'Parámetro' : 'Stock'; ?> Existente</h1>
                 </div>
 
-                <input type="hidden" name="original_param_key" value="<?php echo htmlspecialchars($key_para_editar); ?>">
-                
-                <div class="section">
-                    <div class="form-item-edit">
-                        <label for="param_key">ID del Parámetro (ej: 'caudal_2'):</label>
-                        <input type="text" id="param_key" name="param_key" value="<?php echo htmlspecialchars($key_para_editar); ?>" required>
-                    </div>
+                <div class="section selection-list">
+                    <p>Haz clic en el elemento que deseas modificar:</p>
                     
-                    <div class="form-item-edit">
-                        <label for="param_label">Nombre (ej: 'Caudal Secundario'):</label>
-                        <input type="text" id="param_label" name="param_label" value="<?php echo htmlspecialchars($param_data['label']); ?>" required>
-                    </div>
-                    
-                    <?php if ($es_param): ?>
-                        <div class="form-item-edit">
-                            <label for="param_units">Unidades (ej: '[L/h]'):</label>
-                            <input type="text" id="param_units" name="param_units" value="<?php echo htmlspecialchars($param_data['units']); ?>">
-                        </div>
-                    <?php endif; ?>
-                    <hr style="margin: 20px 0;">
-                    <p><strong>Límites de Alarma:</strong></p>
-
-                    <div class="form-item-edit">
-                        <label>Alarma Correctiva (Roja) - Inferior:</label>
-                        <input type="number" name="param_c_low" value="<?php echo htmlspecialchars($param_data['alarm_c_low']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Alarma Correctiva (Roja) - Superior:</label>
-                        <input type="number" name="param_c_high" value="<?php echo htmlspecialchars($param_data['alarm_c_high']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Alarma Preventiva (Naranja) - Inferior:</label>
-                        <input type="number" name="param_p_low" value="<?php echo htmlspecialchars($param_data['alarm_p_low']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Alarma Preventiva (Naranja) - Superior:</label>
-                        <input type="number" name="param_p_high" value="<?php echo htmlspecialchars($param_data['alarm_p_high']); ?>">
-                    </div>
-                    
-                    <hr style="margin: 20px 0;">
-                    <p><strong>Rango de Valor Aleatorio:</strong></p>
-
-                    <div class="form-item-edit">
-                        <label>Valor Mínimo Aleatorio:</label>
-                        <input type="number" name="rand_min" value="<?php echo htmlspecialchars($param_data['rand_min']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Valor Máximo Aleatorio:</label>
-                        <input type="number" name="rand_max" value="<?php echo htmlspecialchars($param_data['rand_max']); ?>">
-                    </div>
+                    <?php foreach ($lista as $key => $element): ?>
+                        <button type="submit" name="selector_id" value="<?php echo $key; ?>" class="selection-item-btn">
+                            <?php echo htmlspecialchars($element['label']); ?>
+                            <?php if($tipo == 'param'): ?>
+                                <span>(<?php echo htmlspecialchars($element['units'] ?? '-'); ?>)</span>
+                            <?php endif; ?>
+                        </button>
+                    <?php endforeach; ?>
                 </div>
 
                 <div class="buttons-edit-wizard">
-                    <button type="submit" class="btn-aceptar">Guardar Cambios</button>
-                    <a href="editar_paso1.php" class="btn-cancelar-link">Volver (Cancelar)</a>
+                    <a href="editar_paso1.php" class="btn-cancelar-link">Volver / Cancelar</a>
                 </div>
             </form>
 
         <?php else: ?>
-            <div class="content-header">
-                <h1>Seleccionar <?php echo $titulo; ?> a Editar</h1>
-            </div>
 
-            <div class="section select-list">
-                <?php if (empty($lista_actual)): ?>
-                    <p>No hay items para editar.</p>
-                <?php else: ?>
-                    <p>Haz clic en el item que deseas editar:</p>
+            <form action="editar_procesar.php" method="POST">
+                <input type="hidden" name="form_type" value="edit_item">
+                <input type="hidden" name="tipo_item" value="<?php echo $tipo; ?>">
+                <input type="hidden" name="item_id" value="<?php echo htmlspecialchars($id_seleccionado); ?>">
+
+                <div class="content-header">
+                    <h1>Editando: <?php echo htmlspecialchars($val_label); ?></h1>
+                </div>
+
+                <div class="section">
                     
-                    <?php 
-                    // Recorremos los parámetros y creamos un enlace (<a>) por cada uno
-                    foreach ($lista_actual as $key => $config): 
-                    ?>
-                        <a href="editar_paso2_edit.php?tipo=<?php echo $tipo; ?>&key=<?php echo htmlspecialchars($key); ?>" class="select-item">
-                            <?php echo htmlspecialchars($config['label']); ?> (ID: <?php echo htmlspecialchars($key); ?>)
-                        </a>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-            
-            <div class="buttons-edit-wizard">
-                <a href="editar_paso1.php" class="btn-cancelar-link">Volver (Cancelar)</a>
-            </div>
+                    <div class="form-item-edit">
+                        <label>Nombre (Etiqueta):</label>
+                        <input type="text" name="label" value="<?php echo htmlspecialchars($val_label); ?>" required>
+                    </div>
+
+                    <?php if ($tipo == 'param'): ?>
+                        <div class="form-item-edit">
+                            <label>Unidades:</label>
+                            <input type="text" name="units" value="<?php echo htmlspecialchars($val_units); ?>">
+                        </div>
+
+                        <hr style="margin: 20px 0;">
+                        <p><strong>Límites de Alarma Correctiva (Crítica):</strong></p>
+
+                        <div class="form-item-edit">
+                            <label>Valor Mínimo:</label>
+                            <input type="number" step="0.01" name="alarm_c_low" value="<?php echo $val_c_low; ?>">
+                        </div>
+                        <div class="form-item-edit">
+                            <label>Valor Máximo:</label>
+                            <input type="number" step="0.01" name="alarm_c_high" value="<?php echo $val_c_high; ?>">
+                        </div>
+
+                        <hr style="margin: 20px 0;">
+                        <p><strong>Límites de Alarma Preventiva (Aviso):</strong></p>
+
+                        <div class="form-item-edit">
+                            <label>Valor Mínimo:</label>
+                            <input type="number" step="0.01" name="alarm_p_low" value="<?php echo $val_p_low; ?>">
+                        </div>
+                        <div class="form-item-edit">
+                            <label>Valor Máximo:</label>
+                            <input type="number" step="0.01" name="alarm_p_high" value="<?php echo $val_p_high; ?>">
+                        </div>
+
+                        <hr style="margin: 20px 0;">
+                        <p><strong>Rango de Simulación (Aleatorio):</strong></p>
+
+                        <div class="form-item-edit">
+                            <label>Valor Mínimo:</label>
+                            <input type="number" step="0.01" name="rand_min" value="<?php echo $val_r_min; ?>">
+                        </div>
+                        <div class="form-item-edit">
+                            <label>Valor Máximo:</label>
+                            <input type="number" step="0.01" name="rand_max" value="<?php echo $val_r_max; ?>">
+                        </div>
+
+                    <?php else: // ES STOCK ?>
+                        
+                        <hr style="margin: 20px 0;">
+                        <p><strong>Configuración de Alarma:</strong></p>
+
+                        <div class="form-item-edit">
+                            <label>Alarma Mínima (Cantidad Crítica):</label>
+                            <input type="number" step="0.01" name="alarm_c_low" value="<?php echo $val_c_low; ?>">
+                        </div>
+
+                        <p><strong>Rango de Simulación (Aleatorio):</strong></p>
+
+                        <div class="form-item-edit">
+                            <label>Stock Mínimo:</label>
+                            <input type="number" step="0.01" name="rand_min" value="<?php echo $val_r_min; ?>">
+                        </div>
+                        <div class="form-item-edit">
+                            <label>Stock Máximo:</label>
+                            <input type="number" step="0.01" name="rand_max" value="<?php echo $val_r_max; ?>">
+                        </div>
+
+                    <?php endif; ?>
+                </div>
+
+                <div class="buttons-edit-wizard">
+                    <button type="submit" class="btn-aceptar">Guardar Cambios</button>
+                    <a href="editar_paso2_edit.php?tipo=<?php echo $tipo; ?>" class="btn-cancelar-link">Volver Atrás</a>
+                </div>
+            </form>
 
         <?php endif; ?>
-
     </div>
 </body>
 </html>

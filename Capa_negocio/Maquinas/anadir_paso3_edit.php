@@ -1,169 +1,180 @@
 <?php
+// Proyecto/Capa_negocio/Maquinas/anadir_paso3_edit.php
+require_once("../Usuario/clase_usuario.php");
 session_start();
 
-// 1. Determinamos qué estamos editando
-$tipo = $_GET['tipo'] ?? 'param';
-$es_param = ($tipo == 'param');
-$seccion_sesion = $es_param ? 'parameters' : 'stock';
-$titulo = $es_param ? "Parámetro" : "Ítem de Stock";
-
-// 2. Seguridad
-if (!isset($_SESSION['anadir_data'])) {
-    header("Location: ../../Capa_usuario/Planta_produccion/plantaproduccion_jefe.php");
+// 1. Verificar sesión
+if (!isset($_SESSION['add_data'])) {
+    header("Location: anadir_paso1.php");
     exit;
 }
 
-// 3. LÓGICA DE GUARDADO (Si se envía el formulario)
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    $original_key = $_POST['original_param_key'];
-    $new_key = $_POST['param_key'];
-    
-    // --- ¡LÓGICA DE UNIDADES MODIFICADA! ---
-    $param_units = 'Uds'; // Valor por defecto para Stock
-    if ($es_param) {
-        $param_units = $_POST['param_units'];
-    }
-    // --- FIN LÓGICA ---
-    
-    $edited_parameter = [
-        'label' => $_POST['param_label'],
-        'units' => $param_units, // <-- Valor (Uds o $_POST)
-        'alarm_c_low' => $_POST['param_c_low'],
-        'alarm_c_high' => $_POST['param_c_high'],
-        'alarm_p_low' => $_POST['param_p_low'],
-        'alarm_p_high' => $_POST['param_p_high'],
-        'rand_min' => $_POST['rand_min'],
-        'rand_max' => $_POST['rand_max'],
-    ];
-    
-    // Guardamos en la sesión 'anadir_data'
-    unset($_SESSION['anadir_data'][$seccion_sesion][$original_key]);
-    $_SESSION['anadir_data'][$seccion_sesion][$new_key] = $edited_parameter;
-    
+$tipo = $_GET['tipo'] ?? 'param';
+$data = $_SESSION['add_data'];
+$lista = ($tipo == 'param') ? $data['parameters'] : $data['stock'];
+
+// Si no hay datos, volver
+if (empty($lista)) {
+    $_SESSION['flash_error'] = "No hay elementos para editar.";
     header("Location: anadir_paso2.php");
     exit;
 }
 
-// 4. LÓGICA DE VISTA (Si se carga la página)
-$key_para_editar = $_GET['key'] ?? null;
-$lista_actual = $_SESSION['anadir_data'][$seccion_sesion] ?? [];
+// 2. LÓGICA DE SELECCIÓN
+$id_seleccionado = isset($_POST['selector_id']) ? $_POST['selector_id'] : null;
+$mostrar_formulario = false;
+$item = null;
 
-if ($key_para_editar && isset($lista_actual[$key_para_editar])) {
-    $param_data = $lista_actual[$key_para_editar];
-} else {
-    // (lista_parametros se usará en la vista de lista)
+if ($id_seleccionado && isset($lista[$id_seleccionado])) {
+    $mostrar_formulario = true;
+    $item = $lista[$id_seleccionado];
+    
+    // Preparar valores
+    $val_label = $item['label'] ?? '';
+    $val_units = $item['units'] ?? '';
+    
+    // Alarmas
+    $val_c_low = $item['alarm_c_low'] ?? 0;
+    $val_c_high = $item['alarm_c_high'] ?? 0;
+    $val_p_low = $item['alarm_p_low'] ?? 0;
+    $val_p_high = $item['alarm_p_high'] ?? 0;
+    
+    // Aleatorios
+    $val_r_min = $item['rand_min'] ?? 0;
+    $val_r_max = $item['rand_max'] ?? 100;
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Editar <?php echo $titulo; ?></title>
+    <title>Editar <?php echo ucfirst($tipo); ?></title>
     <link rel="stylesheet" href="../../Lib/Estilos/Estilo_maquinas_jefe.css">
     <style>
-        .select-list { background: #fff; padding: 20px; border-radius: 8px; }
-        .select-item { 
-            display: block; margin-bottom: 10px; font-size: 1.1em;
-            padding: 10px; background-color: #f9f9f9; border: 1px solid #eee;
-            border-radius: 5px; text-decoration: none; color: #3f4b27;
-            font-weight: bold;
+        * { box-sizing: border-box; }
+        body { background-color: #7e8a50; padding: 40px 20px; min-height: 100vh; }
+        .main-container {
+            background-color: #ffffff; padding: 40px; border-radius: 20px;
+            max-width: 700px; margin: 0 auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .select-item:hover { background-color: #e9e9e9; }
+        .selection-list { background: #fff; padding: 10px; }
+        .selection-item-btn { 
+            display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 15px; 
+            cursor: pointer; border: 1px solid #eee; background: #f9f9f9; 
+            font-size: 1.1em; color: #333; border-radius: 5px; transition: all 0.2s;
+        }
+        .selection-item-btn:hover { background-color: #e2e6ea; border-color: #adb5bd; font-weight: bold; color: #3f4b27; transform: translateX(5px); }
+
+        .fila-doble { display: flex; gap: 20px; margin-bottom: 15px; }
+        .columna-mitad { flex: 1; }
+        .form-item-edit input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; color: #3f4b27; font-size: 1.1em; }
     </style>
 </head>
 <body>
-    <div class="main-container" style="display:block; max-width: 800px;">
-        
-        <?php if (isset($param_data)): ?>
-            <form action="anadir_paso3_edit.php?tipo=<?php echo $tipo; ?>" method="POST">
-                <div class="content-header">
-                    <h1>Editando <?php echo $titulo; ?>: <?php echo htmlspecialchars($param_data['label']); ?></h1>
+    <div class="main-container">
+
+        <?php if (!$mostrar_formulario): ?>
+            
+            <div class="content-header">
+                <h1>Seleccionar <?php echo ($tipo == 'param') ? 'Parámetro' : 'Stock'; ?></h1>
+            </div>
+
+            <form action="" method="POST">
+                <div class="section selection-list">
+                    <p style="margin-bottom:15px; color:#666;">Elige el elemento a modificar:</p>
+                    
+                    <?php foreach ($lista as $key => $element): ?>
+                        <button type="submit" name="selector_id" value="<?php echo $key; ?>" class="selection-item-btn">
+                            <?php echo htmlspecialchars($element['label']); ?>
+                            <?php if($tipo == 'param'): ?>
+                                <span style="float:right; color:#777; font-size:0.9em; font-weight:normal;">
+                                    (<?php echo htmlspecialchars($element['units'] ?? '-'); ?>)
+                                </span>
+                            <?php endif; ?>
+                        </button>
+                    <?php endforeach; ?>
                 </div>
 
-                <input type="hidden" name="original_param_key" value="<?php echo htmlspecialchars($key_para_editar); ?>">
-                
-                <div class="section">
-                    <div class="form-item-edit">
-                        <label>ID del Parámetro:</label>
-                        <input type="text" name="param_key" value="<?php echo htmlspecialchars($key_para_editar); ?>" required>
-                    </div>
-                    
-                    <div class="form-item-edit">
-                        <label>Nombre:</label>
-                        <input type="text" name="param_label" value="<?php echo htmlspecialchars($param_data['label']); ?>" required>
-                    </div>
-                    
-                    <?php if ($es_param): ?>
-                        <div class="form-item-edit">
-                            <label>Unidades:</label>
-                            <input type="text" name="param_units" value="<?php echo htmlspecialchars($param_data['units']); ?>">
-                        </div>
-                    <?php endif; ?>
-                    <hr style="margin: 20px 0;">
-                    <p><strong>Límites de Alarma:</strong></p>
-
-                    <div class="form-item-edit">
-                        <label>Alarma Correctiva (Roja) - Inferior:</label>
-                        <input type="number" name="param_c_low" value="<?php echo htmlspecialchars($param_data['alarm_c_low']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Alarma Correctiva (Roja) - Superior:</label>
-                        <input type="number" name="param_c_high" value="<?php echo htmlspecialchars($param_data['alarm_c_high']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Alarma Preventiva (Naranja) - Inferior:</label>
-                        <input type="number" name="param_p_low" value="<?php echo htmlspecialchars($param_data['alarm_p_low']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Alarma Preventiva (Naranja) - Superior:</label>
-                        <input type="number" name="param_p_high" value="<?php echo htmlspecialchars($param_data['alarm_p_high']); ?>">
-                    </div>
-                    
-                    <hr style="margin: 20px 0;">
-                    <p><strong>Rango de Valor Aleatorio:</strong></p>
-
-                    <div class="form-item-edit">
-                        <label>Valor Mínimo Aleatorio:</label>
-                        <input type="number" name="rand_min" value="<?php echo htmlspecialchars($param_data['rand_min']); ?>">
-                    </div>
-                    <div class="form-item-edit">
-                        <label>Valor Máximo Aleatorio:</label>
-                        <input type="number" name="rand_max" value="<?php echo htmlspecialchars($param_data['rand_max']); ?>">
-                    </div>
-                </div>
-
-                <div class="buttons-edit-wizard">
-                    <button type="submit" class="btn-aceptar">Guardar Cambios</button>
-                    <a href="anadir_paso2.php" class="btn-cancelar-link">Volver (Cancelar)</a>
+                <div class="buttons-edit-wizard" style="margin-top:20px;">
+                    <a href="anadir_paso2.php" class="btn-cancelar-link">Volver Atrás</a>
                 </div>
             </form>
 
         <?php else: ?>
+
             <div class="content-header">
-                <h1>Seleccionar <?php echo $titulo; ?> a Editar</h1>
+                <h1>Editando: <?php echo htmlspecialchars($val_label); ?></h1>
             </div>
 
-            <div class="section select-list">
-                <?php if (empty($lista_actual)): ?>
-                    <p>No hay items para editar.</p>
-                <?php else: ?>
-                    <p>Haz clic en el item que deseas editar:</p>
+            <form action="anadir_procesar.php" method="POST">
+                <input type="hidden" name="form_type" value="edit_item">
+                <input type="hidden" name="tipo_item" value="<?php echo $tipo; ?>">
+                <input type="hidden" name="item_id" value="<?php echo htmlspecialchars($id_seleccionado); ?>">
+
+                <div class="section">
                     
-                    <?php foreach ($lista_actual as $key => $config): ?>
-                        <a href="anadir_paso3_edit.php?tipo=<?php echo $tipo; ?>&key=<?php echo htmlspecialchars($key); ?>" class="select-item">
-                            <?php echo htmlspecialchars($config['label']); ?> (ID: <?php echo htmlspecialchars($key); ?>)
-                        </a>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-            
-            <div class="buttons-edit-wizard">
-                <a href="anadir_paso2.php" class="btn-cancelar-link">Volver (Cancelar)</a>
-            </div>
+                    <div class="form-item-edit">
+                        <label>Nombre (Etiqueta):</label>
+                        <input type="text" name="label" value="<?php echo htmlspecialchars($val_label); ?>" required>
+                    </div>
+
+                    <?php if ($tipo == 'param'): ?>
+                        <div class="form-item-edit">
+                            <label>Unidades:</label>
+                            <input type="text" name="units" value="<?php echo htmlspecialchars($val_units); ?>">
+                        </div>
+                    <?php endif; ?>
+
+                    <hr style="margin: 20px 0;">
+                    <h3>Alarmas Críticas (Rojo)</h3>
+                    <div class="fila-doble">
+                        <div class="columna-mitad">
+                            <label>Mínimo:</label>
+                            <input type="number" step="0.01" name="alarm_c_low" value="<?php echo $val_c_low; ?>">
+                        </div>
+                        <div class="columna-mitad">
+                            <label>Máximo:</label>
+                            <input type="number" step="0.01" name="alarm_c_high" value="<?php echo $val_c_high; ?>">
+                        </div>
+                    </div>
+
+                    <h3>Alarmas Preventivas (Naranja)</h3>
+                    <div class="fila-doble">
+                        <div class="columna-mitad">
+                            <label>Mínimo:</label>
+                            <input type="number" step="0.01" name="alarm_p_low" value="<?php echo $val_p_low; ?>">
+                        </div>
+                        <div class="columna-mitad">
+                            <label>Máximo:</label>
+                            <input type="number" step="0.01" name="alarm_p_high" value="<?php echo $val_p_high; ?>">
+                        </div>
+                    </div>
+
+                    <hr style="margin: 20px 0;">
+                    <h3>Simulación</h3>
+                    <div class="fila-doble">
+                        <div class="columna-mitad">
+                            <label>Generar Mínimo:</label>
+                            <input type="number" step="0.01" name="rand_min" value="<?php echo $val_r_min; ?>">
+                        </div>
+                        <div class="columna-mitad">
+                            <label>Generar Máximo:</label>
+                            <input type="number" step="0.01" name="rand_max" value="<?php echo $val_r_max; ?>">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="buttons-edit-wizard" style="margin-top:30px;">
+                    <a href="anadir_paso3_edit.php?tipo=<?php echo $tipo; ?>" class="btn-cancelar-link">Atrás</a>
+                    <button type="submit" class="btn-aceptar">Guardar Cambios</button>
+                </div>
+            </form>
 
         <?php endif; ?>
-
     </div>
 </body>
 </html>

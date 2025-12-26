@@ -1,120 +1,122 @@
 <?php
+// Proyecto/Capa_negocio/Maquinas/anadir_procesar.php
 session_start();
-include_once ("../../Lib/BD/AccesoBD.php");
+require_once("clases_maquina.php");
 
-// Seguridad: Si no hay datos en sesión, fuera.
-if (!isset($_SESSION['anadir_data'])) {
+if (!isset($_SESSION['add_data'])) {
     header("Location: anadir_paso1.php");
     exit;
 }
 
-// 1. Guardar cambios temporales en la sesión (si se navega entre pasos)
-if (isset($_POST['machine_id']))   $_SESSION['anadir_data']['machine_id'] = $_POST['machine_id'];
-if (isset($_POST['machine_name'])) $_SESSION['anadir_data']['machine_name'] = $_POST['machine_name'];
-if (isset($_POST['link']))         $_SESSION['anadir_data']['link'] = $_POST['link'];
-if (isset($_POST['imagen']))       $_SESSION['anadir_data']['imagen'] = $_POST['imagen'];
-if (isset($_POST['description']))  $_SESSION['anadir_data']['description'] = $_POST['description'];
+// 1. ACTUALIZAR DATOS TEMPORALES (Si el usuario escribió algo en el dashboard)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // AQUÍ ESTÁ EL CAMBIO: GUARDAR EL NOMBRE TAMBIÉN
+    if (isset($_POST['nombre'])) $_SESSION['add_data']['machine_name'] = $_POST['nombre'];
+    
+    if (isset($_POST['description'])) $_SESSION['add_data']['description'] = $_POST['description'];
+    if (isset($_POST['imagen'])) $_SESSION['add_data']['imagen'] = $_POST['imagen'];
+}
 
+// =========================================================
+// CASO A: GUARDAR FINAL (INSERT en Base de Datos)
+// =========================================================
+if (isset($_POST['accion_guardar'])) {
+    $data = $_SESSION['add_data'];
+    
+    // Crear objeto
+    $maquina = new Maquina();
+    $maquina->id_maquina = $data['machine_id'];
+    $maquina->nombre = $data['machine_name'];
+    $maquina->descripcion = $data['description'];
+    $maquina->imagen = $data['imagen'];
+    $maquina->orden = $data['orden']; 
+    
+    // INSERTAR
+    $maquina->guardar(); 
+    
+    // INSERTAR COMPONENTES
+    Maquina::guardarDesdeSesion($data);
+    
+    unset($_SESSION['add_data']);
+    header("Location: ../../Capa_usuario/Planta_produccion/plantaproduccion_plantilla.php");
+    exit;
+}
 
-// 2. GESTIÓN DE NAVEGACIÓN (Siguiente / Borrar / Cancelar)
-// (Esta parte es idéntica a la que tenías, solo gestiona el flujo)
+// =========================================================
+// CASO B: NAVEGACIÓN
+// =========================================================
+elseif (isset($_POST['accion_siguiente'])) {
+    $p_action = $_POST['param_action'];
+    $s_action = $_POST['stock_action'];
 
-if (isset($_POST['accion_siguiente'])) {
-    $param_accion = $_POST['param_action'] ?? '';
-    $stock_accion = $_POST['stock_action'] ?? '';
-
-    if ($param_accion != '' && $stock_accion != '') {
-        $_SESSION['flash_error'] = "Error: No puedes seleccionar ambas acciones.";
+    if (!empty($p_action) && !empty($s_action)) {
+        $_SESSION['flash_error'] = "Error: Elige solo una acción a la vez.";
         header("Location: anadir_paso2.php");
         exit;
     }
-    if ($param_accion != '') {
-        // Redirige a añadir/editar/borrar parámetro
-        header("Location: anadir_paso3_" . ($param_accion == 'add' ? 'add' : ($param_accion == 'edit' ? 'edit' : 'del')) . ".php?tipo=param");
-        exit;
+
+    if ($p_action == 'add') header("Location: anadir_paso3_add.php?tipo=param");
+    elseif ($p_action == 'edit') header("Location: anadir_paso3_edit.php?tipo=param");
+    elseif ($p_action == 'delete') header("Location: anadir_paso3_del.php?tipo=param");
+    elseif ($s_action == 'add_stock') header("Location: anadir_paso3_add.php?tipo=stock");
+    elseif ($s_action == 'edit_stock') header("Location: anadir_paso3_edit.php?tipo=stock");
+    elseif ($s_action == 'delete_stock') header("Location: anadir_paso3_del.php?tipo=stock");
+    else {
+        $_SESSION['flash_error'] = "Selecciona una acción.";
+        header("Location: anadir_paso2.php");
     }
-    if ($stock_accion != '') {
-        // Redirige a añadir/editar/borrar stock
-        header("Location: anadir_paso3_" . ($stock_accion == 'add_stock' ? 'add' : ($stock_accion == 'edit_stock' ? 'edit' : 'del')) . ".php?tipo=stock");
-        exit;
+    exit;
+}
+
+// =========================================================
+// CASO C: PROCESAR FORMULARIOS (ADD/EDIT ITEM)
+// =========================================================
+if (isset($_POST['form_type'])) {
+    
+    $tipo = $_POST['tipo_item']; 
+    $accion_form = $_POST['form_type']; 
+    
+    // C.1 AÑADIR O EDITAR ITEM
+    if ($accion_form == 'add_item' || $accion_form == 'edit_item') {
+        
+        if ($accion_form == 'add_item') {
+            $id = $_POST['manual_id'] ?? uniqid();
+        } else {
+            $id = $_POST['item_id'];
+        }
+
+        $item = [
+            'label' => $_POST['label'],
+            'units' => $_POST['units'] ?? '',
+            'alarm_c_low' => $_POST['alarm_c_low'] ?? 0,
+            'alarm_c_high' => $_POST['alarm_c_high'] ?? 0,
+            'alarm_p_low' => $_POST['alarm_p_low'] ?? 0,
+            'alarm_p_high' => $_POST['alarm_p_high'] ?? 0,
+            'rand_min' => $_POST['rand_min'] ?? 0,
+            'rand_max' => $_POST['rand_max'] ?? 100
+        ];
+        
+        if ($tipo == 'param') {
+            $_SESSION['add_data']['parameters'][$id] = $item;
+        } else {
+            $_SESSION['add_data']['stock'][$id] = $item;
+        }
     }
+    
+    // C.2 BORRAR
+    elseif ($accion_form == 'delete_items' && isset($_POST['items_a_borrar'])) {
+        foreach ($_POST['items_a_borrar'] as $id_borrar) {
+            if ($tipo == 'param') {
+                unset($_SESSION['add_data']['parameters'][$id_borrar]);
+            } else {
+                unset($_SESSION['add_data']['stock'][$id_borrar]);
+            }
+        }
+    }
+
     header("Location: anadir_paso2.php");
     exit;
 }
 
-if (isset($_POST['accion_borrar'])) {
-    unset($_SESSION['anadir_data']);
-    header("Location: anadir_paso2.php");
-    exit;
-}
-
-
-// --- 3. GUARDADO FINAL EN BASE DE DATOS ---
-if (isset($_POST['accion_guardar'])) {
-    
-    $data = $_SESSION['anadir_data'];
-    $id_maquina = $data['machine_id']; // Será 'maquina_0' o 'maquina_7'
-    
-    $bd = new AccesoBD();
-    
-    // A. Guardar Info General (Tabla 'maquinas')
-    // Determinamos el orden fijo para los slots
-    $orden = ($id_maquina == 'maquina_0') ? 0 : 7;
-    
-    $bd->guardarInfoGeneral(
-        $id_maquina, 
-        $data['machine_name'], 
-        $data['description'], 
-        $data['imagen'], 
-        $data['link'], 
-        $orden
-    );
-
-    // B. Guardar Estructura (Parametros y Stock)
-    
-    // 1. Limpieza previa: Borramos lo que hubiera en ese slot en la BD
-    $bd->limpiarDetallesMaquina($id_maquina);
-
-    // 2. Insertar Parámetros desde la sesión
-    if (!empty($data['parameters'])) {
-        foreach ($data['parameters'] as $key => $p) {
-            // AccesoBD se encarga de convertir las comas a puntos decimales
-            $bd->insertarParametro(
-                $id_maquina, 
-                $key, 
-                $p['label'], 
-                $p['units'], 
-                $p['alarm_c_low'], $p['alarm_c_high'], 
-                $p['alarm_p_low'], $p['alarm_p_high'], 
-                $p['rand_min'], $p['rand_max']
-            );
-        }
-    }
-
-    // 3. Insertar Stock desde la sesión
-    if (!empty($data['stock'])) {
-        foreach ($data['stock'] as $key => $s) {
-            $bd->insertarStock(
-                $id_maquina, 
-                $key, 
-                $s['label'], 
-                $s['alarm_c_low'], $s['alarm_c_high'], 
-                $s['alarm_p_low'], $s['alarm_p_high'], 
-                $s['rand_min'], $s['rand_max']
-            );
-        }
-    }
-
-    // C. Limpieza Final y Redirección
-    unset($_SESSION['anadir_data']);
-    unset($_SESSION['anadir_data_file_path']);
-    unset($_SESSION['anadir_posicion']);
-
-    header("Location: ../../Capa_usuario/Planta_produccion/plantaproduccion_jefe.php");
-    exit;
-}
-
-// Fallback por si se carga el archivo directamente
 header("Location: anadir_paso2.php");
-exit;
 ?>
