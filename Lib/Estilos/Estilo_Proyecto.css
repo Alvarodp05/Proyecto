@@ -1,116 +1,240 @@
-/*Se crea el estilo del fondo*/
-/* todo lo que se muestra en pantalla(fondo) tendrá este estilo*/
-
+/* ==========================================================================
+   1. ESTILOS COMUNES Y GLOBALES
+   ========================================================================== */
 body {
-      margin: 0;
-      background-color: #7e8a50; /* color hex(hexagonal) */
-      display: flex;
-      justify-content: center; /* property aligns the flexible container's items when the items do not use all available space on the main-axis (horizontally). */
-      align-items: center; /* property specifies the default alignment for items inside a flexbox or grid container */
-      height: 100vh; /*Hace que el fondo verde ocupe el 100% de la pantalla*/
-      overflow: hidden; /*Si algo sobresale del fondo verde se oculta*/
-      position: relative; /*Sirve para anclar a el fondo el resto de elementos*/
-                          /* "overflow" property specifies what should happen if content overflows an element's box */
-	                      /* "position" property specifies the positioning type for an element */
-	                      /* "relative" is positioned relative to its normal position in the document flow */
-    }
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #7e8a50; /* Tu verde original */
+    /* Flexbox global para centrar (usado en Login y Maquinas) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+    color: #3f4b27;
+}
 
+/* Títulos Impact (Común) */
+h1 {
+    font-family: 'Impact', sans-serif;
+    font-size: 3em;
+    color: #3f4b27;
+    margin: 0;
+}
 
- 
-   /*Se crea el estilo de la caja ppal*/
-    .login-container {  /* "." es un selector de clase, todos las clases ("class=...") que sean de este tipo tendrán este estilo */
-      position: relative; /*Aqui se ancla la caja beige al fondo verde*/
-      z-index: 1; /*Sirve para ponerlo encima de los que tegan uno inferior*/
-	              /* "z-index" property specifies the stack order of an element */
-      background-color: #fff;
-      padding: 50px; /*espacio entre el contenido (como texto o una imagen) y el borde*/
-      border-radius: 15px;   /* radio del borde alrededor del elemento */
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2); /* color rgba: red,green, blue & alpha(opacidad)*/
-      text-align: center; /* centrado del texto */
-      width: 480px;
-      max-width: 90%;
-    }
-	
-	/*Donde aparece la imagen*/
-    .logo {
-    display: flex; /*Hace que se ponga el flujo*/
-    flex-direction: column;/*Cambia el sentido para que en vez de ser de izq a dcha sea de arriba a abajo*/
-    align-items: center; /*Se alinean los dos elementos para que estén centrados*/
+/* Botones Comunes */
+button, .btn-action, .btn-aceptar, .btn-cancelar {
+    padding: 10px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1em;
+    color: white;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-aceptar, .btn-guardar-manual, .btn-siguiente {
+    background-color: #3f4b27; /* Verde oscuro */
+}
+.btn-aceptar:hover, .btn-guardar-manual:hover {
+    background-color: #218838;
+    transform: scale(1.05);
+}
+
+.btn-cancelar, .btn-action-delete {
+    background-color: #dc3545; /* Rojo */
+}
+.btn-cancelar:hover, .btn-action-delete:hover {
+    background-color: #c82333;
+    transform: scale(1.05);
+}
+
+/* ==========================================================================
+   2. PÁGINA DE LOGIN (.login-page)
+   ========================================================================== */
+body.login-page {
+    overflow: hidden; /* Evita scroll en login */
+}
+
+.login-container {
+    position: relative;
+    z-index: 1;
+    background-color: #fff;
+    padding: 50px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 480px;
+    max-width: 90%;
+}
+
+.logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     margin-bottom: 20px;
-	}
-	/*Tamaño de la imagen*/
-	.logo img {
-    width: 120px;        
-    height: auto; /*Para que la altura se ajuste automaticamente a la anchura establecida arriba de 120px*/
-    margin-bottom: 10px;
-	}
-	/*Estilo del encabezado 1*/
-	h1 {
-	font-family: 'Impact', sans-serif; /*Fuente*/
-	font-size: 3em; /*Tamaño de la letra*/
-	                /* font-size: 3em;, font-size es la propiedad y 3em es el valor de esa propiedad */
-	color: #3f4b27; /*Color de la letra*/
-	margin: 0; /*Margen de los bordes*/
-	}
-	/*Estilo del encabezado 2*/
-    h2 {
-      font-size: 1em;
-      font-weight: 400;
-      color: #6b7544;
-      margin-bottom: 25px;
-    }
-	/*Estilo del texto que se muestra arriba de los campos a rellenar*/
-    label {
-      display: block; /*Para que se comporte como bloque, es decir ,ocupa todo el ancho y obliga ha haer un salto de linea */
-      text-align: left;
-      margin-bottom: 8px;
-      color: #4e5930;
-    }
-	/*Estilo de los campos a rellenar y las cajas donde se introducen los datos*/
-    input {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-bottom: 15px;
-      font-size: 1em;
-    }
-	
-    /*Estilo de los botones en general*/
-	button {
-	padding: 10px 30px; /* crea un espacio alrededor del elemento */
-	border: none;
-	border-radius: 8px;
-	cursor: pointer; /* "cursor" property specifies the mouse cursor to be displayed when pointing over an element */
-	font-weight: bold;
-	font-size: 1em; /* tamaño de la fuente */
-	color: white; 
-	}
+}
+.logo img { width: 120px; height: auto; margin-bottom: 10px; }
 
+.login-container h2 {
+    font-size: 1em; font-weight: 400; color: #6b7544; margin-bottom: 25px;
+}
+.login-container label {
+    display: block; text-align: left; margin-bottom: 8px; color: #4e5930;
+}
+.login-container input {
+    width: 100%; padding: 10px; border-radius: 8px;
+    border: 1px solid #ccc; margin-bottom: 15px; font-size: 1em;
+    box-sizing: border-box;
+}
+.buttons-login {
+    display: flex; justify-content: space-around; gap: 15px;
+}
 
-	.btn-aceptar {
-	background-color: #28a745; /*Estilo especifico para que el botono de aceptar tenga el fondo verde*/
-	}
+/* ==========================================================================
+   3. PÁGINA DE PLANTA (.planta-page)
+   ========================================================================== */
+body.planta-page {
+    display: block; /* Reseteamos flex para que el margen funcione */
+    margin: 20px;
+    padding: 20px;
+}
 
+/* Contenedor específico de planta */
+.planta-main-container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+}
 
-	.btn-cancelar {
-	background-color: #dc3545; /*Lo mismo pero con el de cancelar en rojo*/
-	}
+.header {
+    display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;
+}
+.header img { width: 120px; height: auto; margin-bottom: 10px; }
 
-	/*Para crear un hueco entre los dos botones*/
-	.buttons {
-	display: flex; /*Para poner los elementos en fila*/
-	justify-content: space-around;  /*Para que haya un espacio entre los elementos*/
-	gap: 15px; /*Dicho espacio es de 15 pixeles*/
-	}
+hr { border: 1px solid #eee; margin-bottom: 30px; }
 
-	/*Mientras se pasa el cursor por el boton de aceptar cambia levemente su color y se hace algo más grande*/
-	.btn-aceptar:hover {
-	background-color: #218838;
-	transform: scale(1.1);
-	}
-	/*Lo mismo pero con el boton de cancelar*/
-	.btn-cancelar:hover {
-	background-color: #c82333;
-	transform: scale(1.1);
-	}
+/* Grid de Máquinas */
+.machines-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 20px;
+    align-items: center;
+}
+
+.machine-card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex; flex-direction: column; justify-content: space-between;
+    height: 100%;
+    position: relative;
+}
+.machine-card a { text-decoration: none; color: inherit; flex-grow: 1; }
+.machine-card h3 { margin-top: 10px; color: #3f4b27; }
+.machine-img { width: 100px; height: auto; margin: 10px 0; }
+
+/* Flechas */
+.arrow { font-size: 40px; color: #3f4b27; text-align: center; margin: 0 auto; padding: 0; }
+.down-arrow { grid-column-start: 5; }
+
+/* Controles de Jefe en Planta */
+.machine-actions-container {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;
+}
+.form-edit { display: flex; gap: 5px; width: 60%; }
+.form-edit select { width: 70%; padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.9em; }
+.form-edit .btn-action { width: 30%; padding: 8px 5px; font-size: 0.9em; background-color: #3f4b27; }
+.form-delete { width: 35%; }
+.btn-action-delete { width: 100%; padding: 8px 10px; font-size: 0.9em; }
+
+.buttons-planta {
+    display: flex; justify-content: space-between; margin-top: 30px;
+}
+
+/* ==========================================================================
+   4. PÁGINA DE MÁQUINAS / FICHA (.maquina-page)
+   ========================================================================== */
+body.maquina-page {
+    /* Hereda el display:flex del body global */
+    padding: 20px;
+}
+
+.maquina-main-container {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    display: flex;
+    gap: 40px;
+    width: 100%;
+    max-width: 1300px;
+}
+
+/* Columna Izq */
+.image-section { flex: 1; }
+.image-section img { width: 400px; border-radius: 12px; }
+
+/* Columna Der */
+.content-section { flex: 2; }
+.content-header {
+    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;
+}
+.content-header h1 {
+    color: #3f4b27; font-size: 2.2em; font-weight: 900; text-transform: uppercase; margin: 0;
+}
+.header-logo img { width: 100px; height: auto; }
+
+.section { margin-bottom: 20px; }
+h2 { color: #4e5930; font-size: 1.5em; font-weight: bold; margin-bottom: 20px; }
+p, label { color: #4e5930; font-size: 1em; }
+
+/* Tablas */
+.tabla-datos {
+    width: 100%; margin-bottom: 30px; border-collapse: collapse; font-size: 0.95em; color: #4e5930;
+}
+.tabla-datos th {
+    background-color: #d9edf7; color: #31708f; border: 1px solid #bce8f1; padding: 12px; text-align: left;
+}
+.tabla-datos th:not(:first-child) { text-align: center; }
+.tabla-datos td {
+    border: 1px solid #e0e0e0; padding: 8px 12px; vertical-align: middle;
+}
+.tabla-datos td:first-child { font-weight: bold; text-align: left; }
+.tabla-datos td:not(:first-child) { text-align: center; }
+
+/* Inputs Tabla (Página Usuario/Jefe) */
+.input-tabla {
+    background-color: #ffffff; border: 1px solid #000000; border-radius: 8px;
+    padding: 8px; font-size: 1em; text-align: center; width: 80px;
+}
+
+/* Alarmas */
+.global-alarm-correctiva, .global-alarm-preventiva, .global-alarm-stock, .global-alarm-ok {
+    width: 400px; padding: 15px; margin-bottom: 20px; border-radius: 10px;
+    box-sizing: border-box; font-size: 0.95em;
+}
+.global-alarm-correctiva { background-color: #f2dede; border: 1px solid #ebccd1; color: #a94442; }
+.global-alarm-preventiva { background-color: #fcf8e3; border: 1px solid #faebcc; color: #8a6d3b; }
+.global-alarm-stock { background-color: #d9edf7; border: 1px solid #bce8f1; color: #31708f; }
+.global-alarm-ok { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; text-align: center; }
+
+.global-alarm-correctiva ul, .global-alarm-preventiva ul, .global-alarm-stock ul {
+    margin-top: 10px; margin-bottom: 0; padding-left: 25px;
+}
+.global-alarm-correctiva li, .global-alarm-preventiva li, .global-alarm-stock li {
+    margin-bottom: 5px;
+}
